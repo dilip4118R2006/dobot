@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOBOT CONTROL TERMINAL</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+        
+        :root {
+            --terminal-green: #0f0;
+            --terminal-dark: #000;
+            --terminal-background: #111;
+            --glow-color: #0f0;
+            --red: #f00;
+            --blue: #0af;
+            --yellow: #ff0;
+            --pink: #f0f;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background-color: var(--terminal-background);
+            color: var(--terminal-green);
+            padding: 20px;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 50, 0, 0.25) 50%
+            );
+            background-size: 100% 0.2rem;
+            pointer-events: none;
+            z-index: 2;
+        }
+        
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: rgba(0, 255, 0, 0.1);
+            z-index: 3;
+            animation: scan 6s linear infinite;
+        }
+        
+        @keyframes scan {
+            0% { top: 0%; }
+            100% { top: 100%; }
+        }
+        
+        .container {
+            border: 2px solid var(--terminal-green);
+            border-radius: 8px;
+            width: 100%;
+            max-width: 800px;
+            padding: 25px;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.4);
+            animation: pulse 2s infinite alternate;
+            margin-bottom: 20px;
+            z-index: 10;
+        }
+        
+        @keyframes pulse {
+            from { box-shadow: 0 0 10px rgba(0, 255, 0, 0.4); }
+            to { box-shadow: 0 0 25px rgba(0, 255, 0, 0.7); }
+        }
+        
+        .terminal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--terminal-green);
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+        }
+        
+        .terminal-title {
+            font-size: 16px;
+            text-transform: uppercase;
+        }
+        
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--red);
+            animation: blink 1s infinite;
+        }
+        
+        .status-indicator.connected {
+            background-color: var(--terminal-green);
+            animation: none;
+        }
+        
+        .terminal-controls span {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 8px;
+            background-color: var(--terminal-green);
+        }
+        
+        h1 {
+            font-family: 'VT323', monospace;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 36px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px var(--glow-color);
+        }
+        
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .control-button {
+            background-color: var(--terminal-dark);
+            color: var(--terminal-green);
+            border: 1px solid var(--terminal-green);
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .control-button:hover:not(:disabled) {
+            background-color: rgba(0, 255, 0, 0.1);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .control-button:active {
+            transform: translateY(0);
+        }
+        
+        .control-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        #colorTeaching {
+            color: var(--blue);
+            border-color: var(--blue);
+        }
+        
+        #colorTeaching:hover:not(:disabled) {
+            background-color: rgba(0, 170, 255, 0.1);
+            box-shadow: 0 0 15px rgba(0, 170, 255, 0.5);
+        }
+        
+        #colorDetection {
+            color: var(--yellow);
+            border-color: var(--yellow);
+        }
+        
+        #colorDetection:hover:not(:disabled) {
+            background-color: rgba(255, 255, 0, 0.1);
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.5);
+        }
+        
+        #cubeDetection {
+            color: var(--pink);
+            border-color: var(--pink);
+        }
+        
+        #cubeDetection:hover:not(:disabled) {
+            background-color: rgba(255, 0, 255, 0.1);
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+        }
+        
+        #homographyMatrix {
+            color: var(--red);
+            border-color: var(--red);
+        }
+        
+        #homographyMatrix:hover:not(:disabled) {
+            background-color: rgba(255, 0, 0, 0.1);
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+        }
+        
+        .quit-button {
+            background-color: var(--terminal-dark);
+            color: var(--red);
+            border-color: var(--red);
+            margin-top: 10px;
+            width: 100%;
+        }
+        
+        .quit-button:hover:not(:disabled) {
+            background-color: rgba(255, 0, 0, 0.1);
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid var(--terminal-green);
+            background-color: rgba(0, 255, 0, 0.05);
+            text-align: center;
+            font-weight: bold;
+            position: relative;
+        }
+        
+        .status::before {
+            content: "[ STATUS ]";
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background-color: var(--terminal-background);
+            padding: 0 10px;
+            font-size: 12px;
+        }
+        
+        .status.running {
+            border-color: var(--blue);
+            color: var(--blue);
+            animation: blink-blue 1s infinite;
+        }
+        
+        @keyframes blink-blue {
+            0%, 49% { border-color: var(--blue); }
+            50%, 100% { border-color: #003355; }
+        }
+        
+        .status.running::before {
+            content: "[ RUNNING ]";
+            color: var(--blue);
+        }
+        
+        .status.error {
+            border-color: var(--red);
+            color: var(--red);
+            animation: blink-red 0.5s infinite;
+        }
+        
+        @keyframes blink-red {
+            0%, 49% { border-color: var(--red); }
+            50%, 100% { border-color: #550000; }
+        }
+        
+        .status.error::before {
+            content: "[ ERROR ]";
+            color: var(--red);
+        }
+        
+        .icon {
+            display: block;
+            margin: 0 auto 15px auto;
+            font-size: 24px;
+        }
+        
+        .console-output {
+            height: 150px;
+            overflow-y: auto;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--terminal-green);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        
+        .console-output p {
+            margin: 0;
+            padding: 0;
+            line-height: 1.2;
+        }
+        
+        .console-output .stdout {
+            color: var(--terminal-green);
+        }
+        
+        .console-output .stderr {
+            color: var(--red);
+        }
+        
+        .console-output .info {
+            color: var(--blue);
+        }
+        
+        .blink {
+            animation: blink 1s steps(1) infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        
+        .random-binary {
+            position: absolute;
+            color: rgba(0, 255, 0, 0.2);
+            font-size: 12px;
+            z-index: 1;
+            user-select: none;
+        }
+        
+        .process-info {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid var(--terminal-green);
+            background-color: rgba(0, 255, 0, 0.02);
+            font-size: 12px;
+        }
+        
+        .process-info::before {
+            content: "[ PROCESSES ]";
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background-color: var(--terminal-background);
+            padding: 0 10px;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="scan-line"></div>
+    
+    <div class="container">
+        <div class="terminal-header">
+            <div class="terminal-title">SYSTEM://DOBOT_CONTROL v2.0</div>
+            <div class="connection-status">
+                <div class="status-indicator" id="wsIndicator"></div>
+                <span id="wsStatus">CONNECTING...</span>
+            </div>
+            <div class="terminal-controls">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+        
+        <h1>DOBOT CONTROL TERMINAL</h1>
+        
+        <div class="button-grid">
+            <button class="control-button" id="colorTeaching">
+                <span class="icon">⊡</span>
+                COLOR TEACHING MODULE
+            </button>
+            
+            <button class="control-button" id="colorDetection">
+                <span class="icon">⊞</span>
+                COLOR DETECTION & GOAL STACK
+            </button>
+            
+            <button class="control-button" id="cubeDetection">
+                <span class="icon">⊟</span>
+                CUBE POSITION DETECTION
+            </button>
+            
+            <button class="control-button" id="homographyMatrix">
+                <span class="icon">⊠</span>
+                HOMOGRAPHY MATRIX CALIBRATION
+            </button>
+        </div>
+        
+        <button class="control-button quit-button" id="quit">
+            <span class="icon">✕</span>
+            TERMINATE CONNECTION
+        </button>
+        
+        <div class="status" id="status">SYSTEM READY <span class="blink">_</span></div>
+        
+        <div class="process-info" id="processInfo" style="display: none;">
+            <div id="processCount">Active Processes: 0</div>
+        </div>
+        
+        <div class="console-output" id="console">
+            <p class="info">> DOBOT CONTROL SYSTEM INITIALIZED</p>
+            <p class="info">> AWAITING INPUT...</p>
+        </div>
+    </div>
+
+    <script>
+        class DobotController {
+            constructor() {
+                this.ws = null;
+                this.isConnected = false;
+                this.activeProcesses = new Set();
+                this.buttonsDisabled = false;
+                
+                this.initializeElements();
+                this.connectWebSocket();
+                this.setupEventListeners();
+                this.startBinaryAnimation();
+                this.startInitialAnimation();
+            }
+            
+            initializeElements() {
+                this.statusEl = document.getElementById('status');
+                this.consoleEl = document.getElementById('console');
+                this.wsIndicator = document.getElementById('wsIndicator');
+                this.wsStatus = document.getElementById('wsStatus');
+                this.processInfo = document.getElementById('processInfo');
+                this.processCount = document.getElementById('processCount');
+                
+                this.buttons = {
+                    colorTeaching: document.getElementById('colorTeaching'),
+                    colorDetection: document.getElementById('colorDetection'),
+                    cubeDetection: document.getElementById('cubeDetection'),
+                    homographyMatrix: document.getElementById('homographyMatrix'),
+                    quit: document.getElementById('quit')
+                };
+            }
+            
+            connectWebSocket() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}`;
+                
+                this.ws = new WebSocket(wsUrl);
+                
+                this.ws.onopen = () => {
+                    this.isConnected = true;
+                    this.wsIndicator.classList.add('connected');
+                    this.wsStatus.textContent = 'CONNECTED';
+                    this.logToConsole('WebSocket connection established', 'info');
+                };
+                
+                this.ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        this.handleWebSocketMessage(data);
+                    } catch (error) {
+                        console.error('Error parsing WebSocket message:', error);
+                    }
+                };
+                
+                this.ws.onclose = () => {
+                    this.isConnected = false;
+                    this.wsIndicator.classList.remove('connected');
+                    this.wsStatus.textContent = 'DISCONNECTED';
+                    this.logToConsole('WebSocket connection lost. Attempting to reconnect...', 'stderr');
+                    
+                    // Attempt to reconnect after 3 seconds
+                    setTimeout(() => this.connectWebSocket(), 3000);
+                };
+                
+                this.ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    this.logToConsole('WebSocket error occurred', 'stderr');
+                };
+            }
+            
+            handleWebSocketMessage(data) {
+                switch (data.type) {
+                    case 'process_start':
+                        this.activeProcesses.add(data.processId);
+                        this.updateProcessInfo();
+                        this.logToConsole(`Started: ${data.script}`, 'info');
+                        break;
+                        
+                    case 'process_output':
+                        this.logToConsole(data.output.trim(), data.stream);
+                        break;
+                        
+                    case 'process_complete':
+                        this.activeProcesses.delete(data.processId);
+                        this.updateProcessInfo();
+                        if (data.success) {
+                            this.logToConsole('Process completed successfully', 'info');
+                            this.setStatus('ready');
+                        } else {
+                            this.logToConsole(`Process failed with code ${data.code}`, 'stderr');
+                            this.setStatus('error', `Process failed with code ${data.code}`);
+                        }
+                        this.enableButtons();
+                        break;
+                        
+                    case 'process_error':
+                        this.activeProcesses.delete(data.processId);
+                        this.updateProcessInfo();
+                        this.logToConsole(`Process error: ${data.error}`, 'stderr');
+                        this.setStatus('error', data.error);
+                        this.enableButtons();
+                        break;
+                        
+                    case 'status_update':
+                        this.logToConsole(data.message, 'info');
+                        break;
+                        
+                    case 'all_processes_terminated':
+                        this.activeProcesses.clear();
+                        this.updateProcessInfo();
+                        this.logToConsole(`${data.count} processes terminated`, 'info');
+                        this.setStatus('ready');
+                        this.enableButtons();
+                        break;
+                        
+                    case 'command_error':
+                        this.logToConsole(`Command error: ${data.error}`, 'stderr');
+                        this.setStatus('error', data.error);
+                        this.enableButtons();
+                        break;
+                }
+            }
+            
+            setupEventListeners() {
+                this.buttons.colorTeaching.addEventListener('click', () => this.sendCommand('2'));
+                this.buttons.colorDetection.addEventListener('click', () => this.sendCommand('3'));
+                this.buttons.cubeDetection.addEventListener('click', () => this.sendCommand('4'));
+                this.buttons.homographyMatrix.addEventListener('click', () => this.sendCommand('5'));
+                this.buttons.quit.addEventListener('click', () => this.sendCommand('q'));
+            }
+            
+            async sendCommand(command) {
+                if (this.buttonsDisabled && command !== 'q') {
+                    this.logToConsole('Please wait for current operation to complete', 'stderr');
+                    return;
+                }
+                
+                this.disableButtons();
+                this.setStatus('running', this.getCommandDescription(command));
+                this.logToConsole(`Executing command: ${command}`, 'info');
+                
+                try {
+                    const response = await fetch('/api/dobot/command', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ command: command })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.status === 'error') {
+                        this.setStatus('error', data.message);
+                        this.logToConsole(`Error: ${data.message}`, 'stderr');
+                        this.enableButtons();
+                    } else if (command === 'q') {
+                        this.setStatus('ready');
+                        this.logToConsole('All processes terminated', 'info');
+                        this.enableButtons();
+                    }
+                    // For other successful commands, status will be updated via WebSocket
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    this.setStatus('error', 'Connection failure');
+                    this.logToConsole('Critical error: Connection failure to backend services', 'stderr');
+                    this.enableButtons();
+                }
+            }
+            
+            getCommandDescription(command) {
+                const descriptions = {
+                    '2': 'EXECUTING COLOR TEACHING MODULE',
+                    '3': 'EXECUTING COLOR DETECTION & GOAL STACK',
+                    '4': 'EXECUTING CUBE POSITION DETECTION',
+                    '5': 'EXECUTING HOMOGRAPHY MATRIX CALIBRATION',
+                    'q': 'TERMINATING ALL PROCESSES'
+                };
+                return descriptions[command] || 'EXECUTING COMMAND';
+            }
+            
+            setStatus(type, message = '') {
+                this.statusEl.className = `status ${type}`;
+                
+                switch (type) {
+                    case 'running':
+                        this.statusEl.innerHTML = `${message} <span class='blink'>_</span>`;
+                        break;
+                    case 'error':
+                        this.statusEl.innerHTML = `ERROR: ${message} <span class='blink'>_</span>`;
+                        break;
+                    case 'ready':
+                    default:
+                        this.statusEl.innerHTML = `SYSTEM READY <span class='blink'>_</span>`;
+                        break;
+                }
+            }
+            
+            disableButtons() {
+                this.buttonsDisabled = true;
+                Object.values(this.buttons).forEach(button => {
+                    if (button.id !== 'quit') {
+                        button.disabled = true;
+                    }
+                });
+            }
+            
+            enableButtons() {
+                this.buttonsDisabled = false;
+                Object.values(this.buttons).forEach(button => {
+                    button.disabled = false;
+                });
+            }
+            
+            updateProcessInfo() {
+                const count = this.activeProcesses.size;
+                this.processCount.textContent = `Active Processes: ${count}`;
+                this.processInfo.style.display = count > 0 ? 'block' : 'none';
+            }
+            
+            logToConsole(message, type = 'stdout') {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('p');
+                logEntry.className = type;
+                logEntry.innerHTML = `> [${timestamp}] ${message}`;
+                this.consoleEl.appendChild(logEntry);
+                this.consoleEl.scrollTop = this.consoleEl.scrollHeight;
+                
+                // Limit console entries to prevent memory issues
+                while (this.consoleEl.children.length > 100) {
+                    this.consoleEl.removeChild(this.consoleEl.firstChild);
+                }
+            }
+            
+            startBinaryAnimation() {
+                // Add binary background elements
+                for (let i = 0; i < 30; i++) {
+                    const binary = document.createElement('div');
+                    binary.className = 'random-binary';
+                    binary.style.left = `${Math.random() * 100}%`;
+                    binary.style.top = `${Math.random() * 100}%`;
+                    binary.textContent = this.generateRandomBinary();
+                    document.body.appendChild(binary);
+                }
+            }
+            
+            generateRandomBinary() {
+                let result = '';
+                const length = Math.floor(Math.random() * 20) + 5;
+                for (let i = 0; i < length; i++) {
+                    result += Math.round(Math.random());
+                }
+                return result;
+            }
+            
+            startInitialAnimation() {
+                const initialMessages = [
+                    "ESTABLISHING CONNECTION TO DOBOT CONTROL SYSTEMS...",
+                    "VERIFYING ACCESS CREDENTIALS...",
+                    "ACCESS GRANTED. WELCOME TO DOBOT CONTROL TERMINAL.",
+                    "SYSTEM MODULES LOADED SUCCESSFULLY.",
+                    "WEBSOCKET CONNECTION ESTABLISHED.",
+                    "READY FOR INPUT."
+                ];
+                
+                setTimeout(() => {
+                    this.consoleEl.innerHTML = '';
+                    this.typeMessages(initialMessages);
+                }, 1000);
+            }
+            
+            typeMessages(messages, index = 0, charIndex = 0) {
+                if (index >= messages.length) return;
+                
+                const message = messages[index];
+                
+                if (charIndex === 0) {
+                    const p = document.createElement('p');
+                    p.className = 'info';
+                    p.id = `init-message-${index}`;
+                    this.consoleEl.appendChild(p);
+                }
+                
+                const messageEl = document.getElementById(`init-message-${index}`);
+                messageEl.textContent = `> ${message.substring(0, charIndex + 1)}`;
+                
+                if (charIndex < message.length - 1) {
+                    setTimeout(() => this.typeMessages(messages, index, charIndex + 1), 20);
+                } else {
+                    setTimeout(() => this.typeMessages(messages, index + 1), 300);
+                }
+            }
+        }
+        
+        // Initialize the controller when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new DobotController();
+        });
+    </script>
+</body>
+</html>
